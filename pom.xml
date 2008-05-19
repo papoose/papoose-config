@@ -15,10 +15,10 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>papoose-cmpn-config</module>
-        <module>papoose-cmpn-http</module>
-        <module>papoose-cmpn-log</module>
-        <module>papoose-cmpn-provision</module>
+        <module>config</module>
+        <module>http</module>
+        <module>log</module>
+        <module>provision</module>
     </modules>
 
     <properties>
