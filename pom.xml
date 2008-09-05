@@ -18,6 +18,7 @@
         <module>config</module>
         <module>http</module>
         <module>log</module>
+        <module>metatype</module>
         <module>provision</module>
     </modules>
 
