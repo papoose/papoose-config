@@ -19,6 +19,7 @@
         <module>http</module>
         <module>log</module>
         <module>metatype</module>
+        <module>monitor</module>
         <module>provision</module>
     </modules>
 
