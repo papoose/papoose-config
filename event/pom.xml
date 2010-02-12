@@ -8,10 +8,10 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>papoose-cmpn-metatype</artifactId>
+    <artifactId>papoose-cmpn-event</artifactId>
     <packaging>jar</packaging>
-    <name>Papoose :: Metatype Service</name>
-    <description>Metatype Service</description>
+    <name>Papoose :: Event Admin Service</name>
+    <description>Event Admin Service</description>
 
     <build>
         <plugins>

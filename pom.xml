@@ -4,18 +4,19 @@
     <parent>
         <groupId>org.papoose</groupId>
         <artifactId>papoose-root</artifactId>
-        <version>1.0.0</version>
+        <version>1.1.1</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.papoose.cmpn</groupId>
-    <artifactId>papoose-root</artifactId>
+    <artifactId>papoose-project</artifactId>
     <name>Papoose :: Service Compendium</name>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
         <module>config</module>
+        <module>event</module>
         <module>http</module>
         <module>log</module>
         <module>metatype</module>
@@ -24,7 +25,7 @@
     </modules>
 
     <properties>
-        <jettyVersion>6.1.5</jettyVersion>
+        <jettyVersion>6.1.9</jettyVersion>
         <papooseTestVersion>1.0-SNAPSHOT</papooseTestVersion>
     </properties>
 
@@ -82,14 +83,8 @@
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
-                <version>3.8.1</version>
+                <version>4.7</version>
                 <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.xbean</groupId>
-                <artifactId>xbean-classloader</artifactId>
-                <version>3.0-SNAPSHOT</version>
             </dependency>
 
             <dependency>
@@ -137,29 +132,66 @@
 
     <repositories>
         <repository>
-            <id>papoose-dist-m2</id>
-            <name>Papoose Repository</name>
-            <url>http://osgi.sourceforge.net/dist-m2</url>
-        </repository>
-
-        <repository>
-            <id>papoose-dist-m2-snapshot</id>
-            <name>Papoose SNAPSHOT Repository</name>
-            <url>http://osgi.sourceforge.net/dist-m2-snapshot</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
+            <id>papoose-dist-m2-snapshots</id>
+            <url>http://oss.sonatype.org/content/repositories/papoose-snapshots/</url>
             <releases>
                 <enabled>false</enabled>
             </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
         </repository>
-
     </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>papoose-dist-m2-snapshots</id>
+            <url>http://oss.sonatype.org/content/repositories/papoose-snapshots/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
 
     <scm>
         <connection>scm:svn:http://osgi.svn.sourceforge.net/svnroot/osgi/osgi-R4-spec/trunk</connection>
         <developerConnection>scm:svn:https://osgi.svn.sourceforge.net/svnroot/osgi/osgi-R4-spec/trunk</developerConnection>
         <url>https://osgi.svn.sourceforge.net/svnroot/osgi/osgi-R4-spec/trunk</url>
     </scm>
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <aggregate>true</aggregate>
+                    <javadocDirectory>${basedir}/src/main/javadoc</javadocDirectory>
+                    <docfilessubdirs>true</docfilessubdirs>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
+
+    <profiles>
+
+        <!-- testing profile -->
+        <profile>
+            <id>tck</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>env-test</name>
+                </property>
+            </activation>
+            <modules>
+                <module>tck</module>
+            </modules>
+        </profile>
+
+    </profiles>
 
 </project>
