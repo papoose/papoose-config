@@ -95,14 +95,16 @@
 
             <dependency>
                 <groupId>org.osgi</groupId>
-                <artifactId>OSGi_R4_v4.1_cmpn_spec</artifactId>
-                <version>1.0.0</version>
+                <artifactId>org.osgi.compendium</artifactId>
+                <version>4.2.0</version>
+                <scope>provided</scope>
             </dependency>
 
             <dependency>
                 <groupId>org.osgi</groupId>
-                <artifactId>OSGi_R4_v4.1_core_spec</artifactId>
-                <version>1.0.0</version>
+                <artifactId>org.osgi.core</artifactId>
+                <version>4.2.0</version>
+                <scope>provided</scope>
             </dependency>
 
             <dependency>

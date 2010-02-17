@@ -29,12 +29,12 @@
 
         <dependency>
             <groupId>org.osgi</groupId>
-            <artifactId>OSGi_R4_v4.1_core_spec</artifactId>
+            <artifactId>org.osgi.compendium</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.osgi</groupId>
-            <artifactId>OSGi_R4_v4.1_cmpn_spec</artifactId>
+            <artifactId>org.osgi.core</artifactId>
         </dependency>
 
     </dependencies>
