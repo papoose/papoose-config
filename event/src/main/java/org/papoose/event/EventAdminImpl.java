@@ -42,6 +42,7 @@ import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.TopicPermission;
 import org.osgi.util.tracker.ServiceTracker;
+
 import org.papoose.event.util.SerialExecutor;
 
 
@@ -124,11 +125,11 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
         String[] topics;
         if (test instanceof String)
         {
-            topics = new String[]{(String)test};
+            topics = new String[]{ (String) test };
         }
         else if (test instanceof String[])
         {
-            topics = (String[])test;
+            topics = (String[]) test;
         }
         else
         {
@@ -173,7 +174,7 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
             paths[i][paths[i].length - 1] = paths[i][paths[i].length - 1].intern();
         }
 
-        String filter = (String)reference.getProperty(EventConstants.EVENT_FILTER);
+        String filter = (String) reference.getProperty(EventConstants.EVENT_FILTER);
         try
         {
             EventListener listener = new EventListener(paths, reference, filter);
@@ -195,7 +196,7 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
     @Override
     public void modifiedService(ServiceReference reference, Object service)
     {
-        LOGGER.entering(CLASS_NAME, "modifiedService", new Object[]{reference, service});
+        LOGGER.entering(CLASS_NAME, "modifiedService", new Object[]{ reference, service });
 
         removedService(reference, service);
         addingService(reference);
@@ -206,10 +207,10 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
     @Override
     public void removedService(ServiceReference reference, Object service)
     {
-        LOGGER.entering(CLASS_NAME, "removedService", new Object[]{reference, service});
+        LOGGER.entering(CLASS_NAME, "removedService", new Object[]{ reference, service });
 
         context.ungetService(reference);
-        remove((EventListener)service);
+        remove((EventListener) service);
 
         LOGGER.exiting(CLASS_NAME, "removedService", null);
     }
@@ -407,7 +408,7 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
 
         public void handleEvent(Event event)
         {
-            EventHandler handler = (EventHandler)context.getService(reference);
+            EventHandler handler = (EventHandler) context.getService(reference);
             if (handler != null) handler.handleEvent(event);
         }
     }
