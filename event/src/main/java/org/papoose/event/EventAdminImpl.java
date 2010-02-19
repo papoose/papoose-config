@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -41,8 +42,10 @@ import org.osgi.service.event.EventAdmin;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.TopicPermission;
+import org.osgi.service.log.LogService;
 import org.osgi.util.tracker.ServiceTracker;
 
+import org.papoose.event.util.LogServiceTracker;
 import org.papoose.event.util.SerialExecutor;
 
 
@@ -64,6 +67,7 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
     private final Listeners listeners = new Listeners();
     private final ExecutorService executor;
     private final ScheduledExecutorService scheduledExecutor;
+    private final LogServiceTracker loggers;
     private int timeout = 60;
     private TimeUnit timeUnit = TimeUnit.SECONDS;
 
@@ -73,6 +77,7 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
 
         this.executor = executor;
         this.scheduledExecutor = scheduledExecutor;
+        this.loggers = new LogServiceTracker(context);
     }
 
     public int getTimeout()
@@ -187,6 +192,7 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
         }
         catch (InvalidSyntaxException e)
         {
+            loggers.log(reference, LogService.LOG_WARNING, "Service had an invalid filter " + filter + ", ignoring", e);
             LOGGER.finest("Service had an invalid filter " + filter + ", ignoring");
             LOGGER.exiting(CLASS_NAME, "addingService", null);
             return null;
@@ -262,6 +268,8 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
 
     private void add(EventListener listener)
     {
+        LOGGER.entering(CLASS_NAME, "add", listener);
+
         for (String[] tokens : listener.paths)
         {
             Listeners lPtr = listeners;
@@ -286,10 +294,14 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
                 set.add(listener);
             }
         }
+
+        LOGGER.exiting(CLASS_NAME, "add");
     }
 
     private void remove(EventListener listener)
     {
+        LOGGER.entering(CLASS_NAME, "remove", listener);
+
         for (String[] tokens : listener.paths)
         {
             Listeners lPtr = listeners;
@@ -307,10 +319,14 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
             if (set == null) return;
             set.remove(listener);
         }
+
+        LOGGER.exiting(CLASS_NAME, "remove");
     }
 
     private Set<EventListener> collectListeners(Event event)
     {
+        LOGGER.entering(CLASS_NAME, "collectListeners", event);
+
         Listeners lPtr = listeners;
         Set<EventListener> set = new HashSet<EventListener>();
 
@@ -329,15 +345,21 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
             addListeners(set, lPtr.handlers.get(tokens[tokens.length - 1]), event);
         }
 
+        LOGGER.exiting(CLASS_NAME, "collectListeners", set);
+
         return set;
     }
 
     private static void addListeners(Set<EventListener> to, Set<EventListener> from, Event event)
     {
+        LOGGER.entering(CLASS_NAME, "addListeners", new Object[]{ to, from, event });
+
         for (EventListener eventListener : from)
         {
             if (event.matches(eventListener.filter)) to.add(eventListener);
         }
+
+        LOGGER.exiting(CLASS_NAME, "addListeners");
     }
 
     private class TimeoutRunnable implements Runnable
@@ -367,14 +389,23 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
                 {
                     public void run()
                     {
+                        loggers.log(listener.reference, LogService.LOG_WARNING, "Listener timeout, will be blacklisted");
+                        LOGGER.log(Level.WARNING, "Listener timeout, will be blacklisted");
+
                         remove(listener);
                     }
                 }, timeout, timeUnit);
 
                 listener.handleEvent(event);
             }
+            catch (RejectedExecutionException ree)
+            {
+                loggers.log(listener.reference, LogService.LOG_WARNING, "Unable to schedule timeout for listener call, call skipped", ree);
+                LOGGER.log(Level.WARNING, "Unable to schedule timeout for listener call, call skipped", ree);
+            }
             catch (Throwable t)
             {
+                loggers.log(listener.reference, LogService.LOG_WARNING, "Listener threw exception", t);
                 LOGGER.log(Level.WARNING, "Listener threw exception", t);
             }
             finally
@@ -382,6 +413,12 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
                 if (future != null) future.cancel(false);
                 if (latch != null) latch.countDown();
             }
+        }
+
+        @Override
+        public String toString()
+        {
+            return getClass().getName() + " [listener=" + listener + " event=" + event + "]";
         }
     }
 
@@ -410,6 +447,21 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
         {
             EventHandler handler = (EventHandler) context.getService(reference);
             if (handler != null) handler.handleEvent(event);
+        }
+
+        @Override
+        public String toString()
+        {
+            StringBuilder builder = new StringBuilder("(");
+            for (String[] path : paths)
+            {
+                if (builder.length() > 1) builder.append(", ");
+                builder.append(path[0]);
+                for (int i = 1; i < path.length; i++) builder.append("/").append(path[i]);
+            }
+            builder.append(")");
+
+            return getClass().getName() + " [paths=" + builder + " reference=" + reference + " filter=" + filter + "]";
         }
     }
 }
