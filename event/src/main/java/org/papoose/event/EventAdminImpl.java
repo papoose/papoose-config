@@ -48,9 +48,9 @@ import org.papoose.event.util.SerialExecutor;
 /**
  * @version $Revision: $ $Date: $
  */
-public class EventManagerImpl extends ServiceTracker implements EventAdmin
+public class EventAdminImpl extends ServiceTracker implements EventAdmin
 {
-    private final static String CLASS_NAME = EventManagerImpl.class.getName();
+    private final static String CLASS_NAME = EventAdminImpl.class.getName();
     private final static Logger LOGGER = Logger.getLogger(CLASS_NAME);
     private final static Filter DEFAULT_FILTER = new Filter()
     {
@@ -66,7 +66,7 @@ public class EventManagerImpl extends ServiceTracker implements EventAdmin
     private int timeout = 60;
     private TimeUnit timeUnit = TimeUnit.SECONDS;
 
-    public EventManagerImpl(BundleContext context, ExecutorService executor, ScheduledExecutorService scheduledExecutor)
+    public EventAdminImpl(BundleContext context, ExecutorService executor, ScheduledExecutorService scheduledExecutor)
     {
         super(context, EventHandler.class.getName(), null);
 
@@ -399,7 +399,7 @@ public class EventManagerImpl extends ServiceTracker implements EventAdmin
 
         private EventListener(String[][] paths, ServiceReference reference, String filter) throws InvalidSyntaxException
         {
-            this.executor = new SerialExecutor(EventManagerImpl.this.executor);
+            this.executor = new SerialExecutor(EventAdminImpl.this.executor);
             this.paths = paths;
             this.reference = reference;
             this.filter = (filter == null ? DEFAULT_FILTER : context.createFilter(filter));
