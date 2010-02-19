@@ -125,8 +125,6 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
             return null;
         }
 
-        Object service = context.getService(reference);
-
         String[] topics;
         if (test instanceof String)
         {
@@ -144,6 +142,7 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
             return null;
         }
 
+        EventHandler service = (EventHandler) context.getService(reference);
         SecurityManager sm = System.getSecurityManager();
         if (sm != null)
         {
@@ -169,6 +168,7 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
             {
                 if ("*".equals(paths[i][j]))
                 {
+                    loggers.log(reference, LogService.LOG_WARNING, "Service has an ill formatted topic " + topics[i] + ", ignoring");
                     LOGGER.finest("Service has an ill formatted topic " + topics[i] + ", ignoring");
                     LOGGER.exiting(CLASS_NAME, "addingService", null);
 
@@ -182,7 +182,7 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
         String filter = (String) reference.getProperty(EventConstants.EVENT_FILTER);
         try
         {
-            EventListener listener = new EventListener(paths, reference, filter);
+            EventListener listener = new EventListener(paths, reference, service, filter);
 
             add(listener);
 
@@ -433,20 +433,21 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
         private final Executor executor;
         private final String[][] paths;
         private final ServiceReference reference;
+        private final EventHandler handler;
         private final Filter filter;
 
-        private EventListener(String[][] paths, ServiceReference reference, String filter) throws InvalidSyntaxException
+        private EventListener(String[][] paths, ServiceReference reference, EventHandler handler, String filter) throws InvalidSyntaxException
         {
             this.executor = new SerialExecutor(EventAdminImpl.this.executor);
             this.paths = paths;
             this.reference = reference;
+            this.handler = handler;
             this.filter = (filter == null ? DEFAULT_FILTER : context.createFilter(filter));
         }
 
         public void handleEvent(Event event)
         {
-            EventHandler handler = (EventHandler) context.getService(reference);
-            if (handler != null) handler.handleEvent(event);
+            handler.handleEvent(event);
         }
 
         @Override
