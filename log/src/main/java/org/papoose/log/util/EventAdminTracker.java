@@ -34,7 +34,7 @@ public class EventAdminTracker extends ServiceTracker implements EventAdmin
 
     public void postEvent(Event event)
     {
-        for (EventAdmin service : (EventAdmin[]) getServices())
+        for (EventAdmin service : getEventAdminServices())
         {
             service.postEvent(event);
         }
@@ -42,9 +42,20 @@ public class EventAdminTracker extends ServiceTracker implements EventAdmin
 
     public void sendEvent(Event event)
     {
-        for (EventAdmin service : (EventAdmin[]) getServices())
+        for (EventAdmin service : getEventAdminServices())
         {
             service.sendEvent(event);
         }
+    }
+
+    private final static EventAdmin[] EMPTY = new EventAdmin[0];
+
+    private EventAdmin[] getEventAdminServices()
+    {
+        EventAdmin[] services = (EventAdmin[]) getServices();
+
+        if (services == null) services = EMPTY;
+
+        return services;
     }
 }

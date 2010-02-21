@@ -34,7 +34,7 @@ public class LogServiceTracker extends ServiceTracker implements LogService
 
     public void log(int level, String message)
     {
-        for (LogService service : (LogService[]) getServices())
+        for (LogService service : getLogServices())
         {
             service.log(level, message);
         }
@@ -42,7 +42,7 @@ public class LogServiceTracker extends ServiceTracker implements LogService
 
     public void log(int level, String message, Throwable exception)
     {
-        for (LogService service : (LogService[]) getServices())
+        for (LogService service : getLogServices())
         {
             service.log(level, message, exception);
         }
@@ -50,7 +50,7 @@ public class LogServiceTracker extends ServiceTracker implements LogService
 
     public void log(ServiceReference sr, int level, String message)
     {
-        for (LogService service : (LogService[]) getServices())
+        for (LogService service : getLogServices())
         {
             service.log(sr, level, message);
         }
@@ -58,9 +58,20 @@ public class LogServiceTracker extends ServiceTracker implements LogService
 
     public void log(ServiceReference sr, int level, String message, Throwable exception)
     {
-        for (LogService service : (LogService[]) getServices())
+        for (LogService service : getLogServices())
         {
             service.log(sr, level, message, exception);
         }
+    }
+
+    private final static LogService[] EMPTY = new LogService[0];
+
+    private LogService[] getLogServices()
+    {
+        LogService[] services = (LogService[]) getServices();
+
+        if (services == null) services = EMPTY;
+
+        return services;
     }
 }

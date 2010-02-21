@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.papoose.cmpn</groupId>
         <artifactId>papoose-cmpn</artifactId>
-        <version>1.0.0.SNAPSHOT</version>
+        <version>1.0-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -13,8 +13,6 @@
     <name>Papoose :: OSGi Compatibility Tests</name>
 
     <modules>
-        <module>bundles</module>
-        <module>test-support</module>
         <module>tests</module>
     </modules>
 

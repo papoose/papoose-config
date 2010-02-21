@@ -215,7 +215,6 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
     {
         LOGGER.entering(CLASS_NAME, "removedService", new Object[]{ reference, service });
 
-        context.ungetService(reference);
         remove((EventListener) service);
 
         LOGGER.exiting(CLASS_NAME, "removedService", null);
@@ -247,20 +246,23 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
 
         Set<EventListener> set = collectListeners(event);
 
-        final CountDownLatch latch = new CountDownLatch(set.size());
-        for (final EventListener listener : set)
+        if (!set.isEmpty())
         {
-            listener.executor.execute(new TimeoutRunnable(latch, listener, event));
-        }
+            final CountDownLatch latch = new CountDownLatch(set.size());
+            for (final EventListener listener : set)
+            {
+                listener.executor.execute(new TimeoutRunnable(latch, listener, event));
+            }
 
-        try
-        {
-            latch.await();
-        }
-        catch (InterruptedException ie)
-        {
-            LOGGER.log(Level.WARNING, "Wait interrupted", ie);
-            Thread.currentThread().interrupt();
+            try
+            {
+                latch.await();
+            }
+            catch (InterruptedException ie)
+            {
+                LOGGER.log(Level.WARNING, "Wait interrupted", ie);
+                Thread.currentThread().interrupt();
+            }
         }
 
         LOGGER.exiting(CLASS_NAME, "sendEvent");
@@ -301,6 +303,8 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
     private void remove(EventListener listener)
     {
         LOGGER.entering(CLASS_NAME, "remove", listener);
+
+        context.ungetService(listener.reference);
 
         for (String[] tokens : listener.paths)
         {
@@ -354,9 +358,13 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
     {
         LOGGER.entering(CLASS_NAME, "addListeners", new Object[]{ to, from, event });
 
-        for (EventListener eventListener : from)
+        if (from != null)
         {
-            if (event.matches(eventListener.filter)) to.add(eventListener);
+
+            for (EventListener eventListener : from)
+            {
+                if (event.matches(eventListener.filter)) to.add(eventListener);
+            }
         }
 
         LOGGER.exiting(CLASS_NAME, "addListeners");
