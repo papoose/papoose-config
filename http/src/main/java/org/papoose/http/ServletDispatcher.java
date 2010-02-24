@@ -21,7 +21,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -41,40 +43,76 @@ public class ServletDispatcher extends HttpServlet
     {
         String path = req.getPathInfo();
 
-        for (ServletRegistration registration : registrations)
+        ServletRegistration r = null;
+
+        done:
+        while (true)
         {
-            if (path.startsWith(registration.getAlias()))
+            for (ServletRegistration registration : registrations)
             {
-                if (registration.getContext().handleSecurity(req, resp))
+                if (path.equals(registration.getAlias()))
                 {
-                    try
+                    if (registration.getContext().handleSecurity(req, resp))
                     {
-                        registration.getServlet().service(req, resp);
-                    }
-                    catch (ServletException e)
-                    {
-                        throw e;
-                    }
-                    catch (IOException e)
-                    {
-                        throw e;
-                    }
-                    catch(Throwable t)
-                    {
-                        LOGGER.log(Level.WARNING, "Problems calling ", t);
+                        r = registration;
+                        break done;
                     }
                 }
             }
+
+            int index = path.lastIndexOf('/');
+            if (index == 0) break;
+            path = path.substring(0, index);
+        }
+
+        if (r == null)
+        {
+            for (ServletRegistration registration : registrations)
+            {
+                if ("/".equals(registration.getAlias()))
+                {
+                    if (registration.getContext().handleSecurity(req, resp))
+                    {
+                        r = registration;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (r != null)
+        {
+            try
+            {
+                r.getServlet().service(req, resp);
+            }
+            catch (ServletException e)
+            {
+                throw e;
+            }
+            catch (IOException e)
+            {
+                throw e;
+            }
+            catch (Throwable t)
+            {
+                LOGGER.log(Level.WARNING, "Problems calling ", t);
+                resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            }
+        }
+        else
+        {
+            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
         }
     }
 
     void register(ServletRegistration registration)
     {
-
+        registrations.add(registration);
     }
 
     void unregister(ServletRegistration registration)
     {
-
+        registrations.remove(registration);
     }
 }

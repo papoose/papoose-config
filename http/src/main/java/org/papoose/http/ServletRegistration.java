@@ -17,8 +17,6 @@
 package org.papoose.http;
 
 import javax.servlet.Servlet;
-import java.util.Dictionary;
-import java.util.logging.Logger;
 
 import org.osgi.service.http.HttpContext;
 
@@ -28,8 +26,6 @@ import org.osgi.service.http.HttpContext;
  */
 class ServletRegistration
 {
-    private final static String CLASS_NAME = ServletRegistration.class.getName();
-    private final static Logger LOGGER = Logger.getLogger(CLASS_NAME);
     private final String alias;
     private final Servlet servlet;
     private final HttpContext context;
@@ -54,5 +50,22 @@ class ServletRegistration
     public Servlet getServlet()
     {
         return servlet;
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ServletRegistration that = (ServletRegistration) o;
+
+        return alias.equals(that.alias);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return alias.hashCode();
     }
 }

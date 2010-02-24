@@ -63,6 +63,8 @@ public class HttpServiceImpl implements HttpService
      */
     public void registerServlet(String alias, Servlet servlet, Dictionary initParams, HttpContext httpContext) throws ServletException, NamespaceException
     {
+        LOGGER.entering(CLASS_NAME, "registerServlet", new Object[]{ alias, servlet, initParams, httpContext });
+
         ServletRegistration registration;
         ServletContextImpl servletContext;
         synchronized (lock)
@@ -97,9 +99,13 @@ public class HttpServiceImpl implements HttpService
                 if (servletContext.getReferenceCount() == 0) contexts.remove(registration.getContext());
             }
 
+            LOGGER.throwing(CLASS_NAME, "registerServlet", t);
+
             if (t instanceof ServletException) throw (ServletException) t;
             throw (RuntimeException) t;
         }
+
+        LOGGER.exiting(CLASS_NAME, "registerServlet");
     }
 
 
@@ -108,6 +114,8 @@ public class HttpServiceImpl implements HttpService
      */
     public void registerResources(String alias, String name, HttpContext httpContext) throws NamespaceException
     {
+        LOGGER.entering(CLASS_NAME, "registerResources", new Object[]{ alias, name, httpContext });
+
         try
         {
             registerServlet(alias, new ServletWrapper(alias, name, httpContext), EMPTY_PARAMS, httpContext);
@@ -116,6 +124,8 @@ public class HttpServiceImpl implements HttpService
         {
             LOGGER.log(Level.SEVERE, "Error registering resource wrapper servlet", se);
         }
+
+        LOGGER.exiting(CLASS_NAME, "registerResources");
     }
 
     /**
@@ -123,6 +133,8 @@ public class HttpServiceImpl implements HttpService
      */
     public void unregister(String alias)
     {
+        LOGGER.entering(CLASS_NAME, "unregister", alias);
+
         ServletRegistration registration;
         synchronized (lock)
         {
@@ -146,6 +158,8 @@ public class HttpServiceImpl implements HttpService
         {
             LOGGER.log(Level.WARNING, "Error destroying servlet", t);
         }
+
+        LOGGER.exiting(CLASS_NAME, "unregister");
     }
 
     /**
@@ -153,7 +167,9 @@ public class HttpServiceImpl implements HttpService
      */
     public HttpContext createDefaultHttpContext()
     {
-        return new HttpContext()
+        LOGGER.entering(CLASS_NAME, "createDefaultHttpContext");
+
+        HttpContext defaultContext = new HttpContext()
         {
             public boolean handleSecurity(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
@@ -172,5 +188,9 @@ public class HttpServiceImpl implements HttpService
                 return null;
             }
         };
+
+        LOGGER.exiting(CLASS_NAME, "createDefaultHttpContext", defaultContext);
+
+        return defaultContext;
     }
 }
