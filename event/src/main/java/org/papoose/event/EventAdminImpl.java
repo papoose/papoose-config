@@ -44,6 +44,7 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.TopicPermission;
 import org.osgi.service.log.LogService;
 import org.osgi.util.tracker.ServiceTracker;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 import org.papoose.event.util.LogServiceTracker;
 import org.papoose.event.util.SerialExecutor;
@@ -52,7 +53,7 @@ import org.papoose.event.util.SerialExecutor;
 /**
  * @version $Revision: $ $Date: $
  */
-public class EventAdminImpl extends ServiceTracker implements EventAdmin
+public class EventAdminImpl implements EventAdmin
 {
     private final static String CLASS_NAME = EventAdminImpl.class.getName();
     private final static Logger LOGGER = Logger.getLogger(CLASS_NAME);
@@ -65,6 +66,8 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
         public boolean matchCase(Dictionary dictionary) { return true; }
     };
     private final Listeners listeners = new Listeners();
+    private final BundleContext context;
+    private final ServiceTracker tracker;
     private final ExecutorService executor;
     private final ScheduledExecutorService scheduledExecutor;
     private final LogServiceTracker loggers;
@@ -73,8 +76,24 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
 
     public EventAdminImpl(BundleContext context, ExecutorService executor, ScheduledExecutorService scheduledExecutor)
     {
-        super(context, EventHandler.class.getName(), null);
+        this.context = context;
+        this.tracker = new ServiceTracker(context, EventHandler.class.getName(), new ServiceTrackerCustomizer()
+        {
+            public Object addingService(ServiceReference reference)
+            {
+                return EventAdminImpl.this.addingService(reference);
+            }
 
+            public void modifiedService(ServiceReference reference, Object service)
+            {
+                EventAdminImpl.this.modifiedService(reference, service);
+            }
+
+            public void removedService(ServiceReference reference, Object service)
+            {
+                EventAdminImpl.this.removedService(reference, service);
+            }
+        });
         this.executor = executor;
         this.scheduledExecutor = scheduledExecutor;
         this.loggers = new LogServiceTracker(context);
@@ -100,6 +119,67 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
         this.timeUnit = timeUnit;
     }
 
+    public void start()
+    {
+        tracker.open();
+        loggers.open();
+    }
+
+    public void stop()
+    {
+        tracker.close();
+        loggers.close();
+    }
+
+    public void postEvent(final Event event)
+    {
+        LOGGER.entering(CLASS_NAME, "postEvent", event);
+
+        SecurityManager sm = System.getSecurityManager();
+        if (sm != null) sm.checkPermission(new TopicPermission(event.getTopic(), TopicPermission.PUBLISH));
+
+        Set<EventListener> set = collectListeners(event);
+
+        for (final EventListener el : set)
+        {
+            el.executor.execute(new TimeoutRunnable(el, event));
+        }
+
+        LOGGER.exiting(CLASS_NAME, "postEvent");
+    }
+
+    public void sendEvent(final Event event)
+    {
+        LOGGER.entering(CLASS_NAME, "sendEvent", event);
+
+        SecurityManager sm = System.getSecurityManager();
+        if (sm != null) sm.checkPermission(new TopicPermission(event.getTopic(), TopicPermission.PUBLISH));
+
+        Set<EventListener> set = collectListeners(event);
+
+        if (!set.isEmpty())
+        {
+            final CountDownLatch latch = new CountDownLatch(set.size());
+            for (final EventListener listener : set)
+            {
+                listener.executor.execute(new TimeoutRunnable(latch, listener, event));
+            }
+
+            try
+            {
+                latch.await();
+            }
+            catch (InterruptedException ie)
+            {
+                LOGGER.log(Level.WARNING, "Wait interrupted", ie);
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        LOGGER.exiting(CLASS_NAME, "sendEvent");
+    }
+
+
     /**
      * This service tracker customizer culls services that do not have
      * an event topic or do not have the proper topic subscription
@@ -111,8 +191,7 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
      *         service or <code>null</code> if the specified referenced service
      *         should not be tracked.
      */
-    @Override
-    public Object addingService(ServiceReference reference)
+    private Object addingService(ServiceReference reference)
     {
         LOGGER.entering(CLASS_NAME, "addingService", reference);
 
@@ -199,8 +278,7 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
         }
     }
 
-    @Override
-    public void modifiedService(ServiceReference reference, Object service)
+    private void modifiedService(ServiceReference reference, Object service)
     {
         LOGGER.entering(CLASS_NAME, "modifiedService", new Object[]{ reference, service });
 
@@ -210,62 +288,13 @@ public class EventAdminImpl extends ServiceTracker implements EventAdmin
         LOGGER.exiting(CLASS_NAME, "modifiedService", null);
     }
 
-    @Override
-    public void removedService(ServiceReference reference, Object service)
+    private void removedService(ServiceReference reference, Object service)
     {
         LOGGER.entering(CLASS_NAME, "removedService", new Object[]{ reference, service });
 
         remove((EventListener) service);
 
         LOGGER.exiting(CLASS_NAME, "removedService", null);
-    }
-
-    public void postEvent(final Event event)
-    {
-        LOGGER.entering(CLASS_NAME, "postEvent", event);
-
-        SecurityManager sm = System.getSecurityManager();
-        if (sm != null) sm.checkPermission(new TopicPermission(event.getTopic(), TopicPermission.PUBLISH));
-
-        Set<EventListener> set = collectListeners(event);
-
-        for (final EventListener el : set)
-        {
-            el.executor.execute(new TimeoutRunnable(el, event));
-        }
-
-        LOGGER.exiting(CLASS_NAME, "postEvent");
-    }
-
-    public void sendEvent(final Event event)
-    {
-        LOGGER.entering(CLASS_NAME, "sendEvent", event);
-
-        SecurityManager sm = System.getSecurityManager();
-        if (sm != null) sm.checkPermission(new TopicPermission(event.getTopic(), TopicPermission.PUBLISH));
-
-        Set<EventListener> set = collectListeners(event);
-
-        if (!set.isEmpty())
-        {
-            final CountDownLatch latch = new CountDownLatch(set.size());
-            for (final EventListener listener : set)
-            {
-                listener.executor.execute(new TimeoutRunnable(latch, listener, event));
-            }
-
-            try
-            {
-                latch.await();
-            }
-            catch (InterruptedException ie)
-            {
-                LOGGER.log(Level.WARNING, "Wait interrupted", ie);
-                Thread.currentThread().interrupt();
-            }
-        }
-
-        LOGGER.exiting(CLASS_NAME, "sendEvent");
     }
 
     private void add(EventListener listener)

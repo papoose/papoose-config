@@ -91,7 +91,7 @@ public class EventAdminImplTest
 
         EventAdminImpl eventAdmin = new EventAdminImpl(bundleContext, executor, scheduledExecutor);
 
-        eventAdmin.open();
+        eventAdmin.start();
 
         Dictionary<String, Object> properties = new Hashtable<String, Object>();
         properties.put(EventConstants.EVENT_TOPIC, "a/b/c/d");
@@ -137,7 +137,7 @@ public class EventAdminImplTest
         {
             sr.unregister();
 
-            eventAdmin.close();
+            eventAdmin.stop();
 
             executor.shutdown();
             scheduledExecutor.shutdown();
@@ -153,7 +153,7 @@ public class EventAdminImplTest
 
         EventAdminImpl eventAdmin = new EventAdminImpl(bundleContext, executor, scheduledExecutor);
 
-        eventAdmin.open();
+        eventAdmin.start();
 
         Dictionary<String, Object> properties = new Hashtable<String, Object>();
         properties.put(EventConstants.EVENT_TOPIC, "a/b/c/*");
@@ -198,7 +198,7 @@ public class EventAdminImplTest
         {
             sr.unregister();
 
-            eventAdmin.close();
+            eventAdmin.stop();
 
             executor.shutdown();
             scheduledExecutor.shutdown();
@@ -214,7 +214,7 @@ public class EventAdminImplTest
 
         EventAdminImpl eventAdmin = new EventAdminImpl(bundleContext, executor, scheduledExecutor);
 
-        eventAdmin.open();
+        eventAdmin.start();
 
         Dictionary<String, Object> properties = new Hashtable<String, Object>();
         properties.put(EventConstants.EVENT_TOPIC, "a/*");
@@ -259,7 +259,7 @@ public class EventAdminImplTest
         {
             sr.unregister();
 
-            eventAdmin.close();
+            eventAdmin.stop();
 
             executor.shutdown();
             scheduledExecutor.shutdown();
