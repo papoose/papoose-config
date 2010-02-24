@@ -20,42 +20,50 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import java.util.Dictionary;
 import java.util.Enumeration;
-import java.util.logging.Logger;
-
-import org.osgi.service.http.HttpContext;
+import java.util.Properties;
 
 
 /**
  * @version $Revision: $ $Date: $
  */
-public class ServletConfigImpl implements ServletConfig
+class ServletConfigImpl implements ServletConfig
 {
-    private final static String CLASS_NAME = ServletConfigImpl.class.getName();
-    private final static Logger LOGGER = Logger.getLogger(CLASS_NAME);
+    private final static Properties EMPTY = new Properties();
+    private final String alias;
+    private final ServletContextImpl servletContext;
+    private final Properties initParams;
 
-    public ServletConfigImpl(String alias, ServletContextImpl servletContext, Dictionary httpContext)
+    ServletConfigImpl(String alias, ServletContextImpl servletContext, Dictionary initParams)
     {
+        this.alias = alias;
+        this.servletContext = servletContext;
 
-
+        if (initParams == null) this.initParams = EMPTY;
+        else
+        {
+            Enumeration enumeration = initParams.keys();
+            while (enumeration.)
+        }
+        this.initParams = initParams;
     }
 
     public String getServletName()
     {
-        return null;  //Todo change body of implemented methods use File | Settings | File Templates.
+        return alias;
     }
 
     public ServletContext getServletContext()
     {
-        return null;  //Todo change body of implemented methods use File | Settings | File Templates.
+        return servletContext;
     }
 
     public String getInitParameter(String name)
     {
-        return null;  //Todo change body of implemented methods use File | Settings | File Templates.
+        return (String) initParams.get(name);
     }
 
     public Enumeration getInitParameterNames()
     {
-        return null;  //Todo change body of implemented methods use File | Settings | File Templates.
+        return initParams.keys();
     }
 }

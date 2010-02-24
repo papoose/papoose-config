@@ -16,8 +16,11 @@
  */
 package org.papoose.http;
 
-import javax.servlet.Servlet;
-import java.util.Dictionary;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.logging.Logger;
 
 import org.osgi.service.http.HttpContext;
@@ -26,33 +29,24 @@ import org.osgi.service.http.HttpContext;
 /**
  * @version $Revision: $ $Date: $
  */
-class ServletRegistration
+ class ServletWrapper extends HttpServlet
 {
-    private final static String CLASS_NAME = ServletRegistration.class.getName();
+    private final static String CLASS_NAME = ServletWrapper.class.getName();
     private final static Logger LOGGER = Logger.getLogger(CLASS_NAME);
     private final String alias;
-    private final Servlet servlet;
-    private final HttpContext context;
+    private final String name;
+    private final HttpContext httpContext;
 
-    ServletRegistration(String alias, Servlet servlet, HttpContext context)
+     ServletWrapper(String alias, String name, HttpContext httpContext)
     {
         this.alias = alias;
-        this.servlet = servlet;
-        this.context = context;
+        this.name = name;
+        this.httpContext = httpContext;
     }
 
-    public HttpContext getContext()
+    @Override
+    protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        return context;
-    }
-
-    public String getAlias()
-    {
-        return alias;
-    }
-
-    public Servlet getServlet()
-    {
-        return servlet;
+        super.service(req, resp);    //Todo change body of overridden methods use File | Settings | File Templates.
     }
 }

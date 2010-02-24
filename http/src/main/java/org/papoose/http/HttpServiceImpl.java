@@ -18,11 +18,18 @@ package org.papoose.http;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URL;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.osgi.framework.BundleContext;
 import org.osgi.service.http.HttpContext;
 import org.osgi.service.http.HttpService;
 import org.osgi.service.http.NamespaceException;
@@ -35,47 +42,135 @@ public class HttpServiceImpl implements HttpService
 {
     private final static String CLASS_NAME = HttpServiceImpl.class.getName();
     private final static Logger LOGGER = Logger.getLogger(CLASS_NAME);
+    private final static Properties EMPTY_PARAMS = new Properties();
+    private final Object lock = new Object();
     private final Map<HttpContext, ServletContextImpl> contexts = new HashMap<HttpContext, ServletContextImpl>();
     private final Map<String, ServletRegistration> registrations = new HashMap<String, ServletRegistration>();
+    private final BundleContext context;
+    private final ServletDispatcher dispatcher;
 
-    public void registerServlet(String alias, Servlet servlet, Dictionary initparams, HttpContext httpContext) throws ServletException, NamespaceException
+    public HttpServiceImpl(BundleContext context, ServletDispatcher dispatcher)
     {
-        if (registrations.containsKey(alias)) throw new NamespaceException("Alias " + alias + " already registered");
-        if (httpContext == null) httpContext = createDefaultHttpContext();
-        ServletRegistration registration = new ServletRegistration(alias, servlet, initparams, httpContext);
-        registrations.put(alias, registration);
+        if (context == null) throw new IllegalArgumentException("Bundle context is null");
+        if (dispatcher == null) throw new IllegalArgumentException("Servlet dispatcher is null");
 
-        ServletContextImpl servletContext = contexts.get(httpContext);
-        if (servletContext == null) contexts.put(httpContext, servletContext = new ServletContextImpl(httpContext));
-        servletContext.incrementReferenceCount();
-
-        servlet.init(new ServletConfigImpl(alias, servletContext, initparams));
-
-
-        //Todo change body of implemented methods use File | Settings | File Templates.
+        this.context = context;
+        this.dispatcher = dispatcher;
     }
 
-    public void registerResources(String alias, String name, HttpContext context) throws NamespaceException
+    /**
+     * {@inheritDoc}
+     */
+    public void registerServlet(String alias, Servlet servlet, Dictionary initParams, HttpContext httpContext) throws ServletException, NamespaceException
     {
-        //Todo change body of implemented methods use File | Settings | File Templates.
+        ServletRegistration registration;
+        ServletContextImpl servletContext;
+        synchronized (lock)
+        {
+            if (registrations.containsKey(alias)) throw new NamespaceException("Alias " + alias + " already registered");
+
+            if (httpContext == null) httpContext = createDefaultHttpContext();
+
+            registration = new ServletRegistration(alias, servlet, httpContext);
+            registrations.put(alias, registration);
+
+            servletContext = contexts.get(httpContext);
+            if (servletContext == null) contexts.put(httpContext, servletContext = new ServletContextImpl(httpContext));
+
+            servletContext.incrementReferenceCount();
+        }
+
+        try
+        {
+            servlet.init(new ServletConfigImpl(alias, servletContext, initParams));
+
+            dispatcher.register(registration);
+        }
+        catch (Throwable t)
+        {
+            LOGGER.log(Level.WARNING, "Error initializing servlet", t);
+
+            synchronized (lock)
+            {
+                servletContext = contexts.get(httpContext);
+                servletContext.decrementReferenceCount();
+                if (servletContext.getReferenceCount() == 0) contexts.remove(registration.getContext());
+            }
+
+            if (t instanceof ServletException) throw (ServletException) t;
+            throw (RuntimeException) t;
+        }
     }
 
+
+    /**
+     * {@inheritDoc}
+     */
+    public void registerResources(String alias, String name, HttpContext httpContext) throws NamespaceException
+    {
+        try
+        {
+            registerServlet(alias, new ServletWrapper(alias, name, httpContext), EMPTY_PARAMS, httpContext);
+        }
+        catch (ServletException se)
+        {
+            LOGGER.log(Level.SEVERE, "Error registering resource wrapper servlet", se);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public void unregister(String alias)
     {
-        ServletRegistration registration = registrations.get(alias);
+        ServletRegistration registration;
+        synchronized (lock)
+        {
+            registration = registrations.remove(alias);
 
-        registration.getServlet().destroy();
-        ServletContextImpl servletContext = contexts.get(registration.getContext());
+            if (registration == null) return;
 
-        servletContext.decrementReferenceCount();
-        if (servletContext.getReferenceCount() == 0) contexts.remove(registration.getContext());
+            ServletContextImpl servletContext = contexts.get(registration.getContext());
 
+            servletContext.decrementReferenceCount();
+            if (servletContext.getReferenceCount() == 0) contexts.remove(registration.getContext());
+        }
 
-        //Todo change body of implemented methods use File | Settings | File Templates.
+        try
+        {
+            dispatcher.unregister(registration);
+
+            registration.getServlet().destroy();
+        }
+        catch (Throwable t)
+        {
+            LOGGER.log(Level.WARNING, "Error destroying servlet", t);
+        }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public HttpContext createDefaultHttpContext()
     {
-        return null;  //Todo change body of implemented methods use File | Settings | File Templates.
+        return new HttpContext()
+        {
+            public boolean handleSecurity(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                return true;
+            }
+
+            public URL getResource(String name)
+            {
+                if (name.startsWith("/")) name = name.substring(1);
+
+                return context.getBundle().getResource(name);
+            }
+
+            public String getMimeType(String name)
+            {
+                return null;
+            }
+        };
     }
 }
