@@ -76,6 +76,10 @@ public class EventAdminImpl implements EventAdmin
 
     public EventAdminImpl(BundleContext context, ExecutorService executor, ScheduledExecutorService scheduledExecutor)
     {
+        if (context == null) throw new IllegalArgumentException("Bundle context is null");
+        if (executor == null) throw new IllegalArgumentException("Executor service is null");
+        if (scheduledExecutor == null) throw new IllegalArgumentException("Scheduled executor service is null");
+
         this.context = context;
         this.tracker = new ServiceTracker(context, EventHandler.class.getName(), new ServiceTrackerCustomizer()
         {
@@ -106,6 +110,7 @@ public class EventAdminImpl implements EventAdmin
 
     public void setTimeout(int timeout)
     {
+        if (timeout < 1) return;
         this.timeout = timeout;
     }
 
@@ -116,6 +121,7 @@ public class EventAdminImpl implements EventAdmin
 
     public void setTimeUnit(TimeUnit timeUnit)
     {
+        if (timeUnit == null) return;
         this.timeUnit = timeUnit;
     }
 
