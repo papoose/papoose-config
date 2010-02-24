@@ -38,13 +38,21 @@ class ServletConfigImpl implements ServletConfig
         this.alias = alias;
         this.servletContext = servletContext;
 
-        if (initParams == null) this.initParams = EMPTY;
+        if (initParams == null)
+        {
+            this.initParams = EMPTY;
+        }
         else
         {
+            this.initParams = new Properties();
+
             Enumeration enumeration = initParams.keys();
-            while (enumeration.)
+            while (enumeration.hasMoreElements())
+            {
+                Object key = enumeration.nextElement();
+                this.initParams.put(key, initParams.get(key));
+            }
         }
-        this.initParams = initParams;
     }
 
     public String getServletName()
