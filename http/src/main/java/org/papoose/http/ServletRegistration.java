@@ -32,7 +32,7 @@ class ServletRegistration
 
     ServletRegistration(String alias, Servlet servlet, HttpContext context)
     {
-        this.alias = alias;
+        this.alias = ("/".equals(alias) ? "" : alias);
         this.servlet = servlet;
         this.context = context;
     }

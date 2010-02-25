@@ -23,7 +23,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import static junit.framework.Assert.fail;
 import org.junit.Test;
-import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;

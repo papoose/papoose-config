@@ -21,9 +21,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -60,24 +58,10 @@ public class ServletDispatcher extends HttpServlet
                 }
             }
 
+            path = path.substring(0, Math.max(0, path.length() - 1));
             int index = path.lastIndexOf('/');
-            if (index == 0) break;
+            if (index == -1) break;
             path = path.substring(0, index);
-        }
-
-        if (r == null)
-        {
-            for (ServletRegistration registration : registrations)
-            {
-                if ("/".equals(registration.getAlias()))
-                {
-                    if (registration.getContext().handleSecurity(req, resp))
-                    {
-                        r = registration;
-                        break;
-                    }
-                }
-            }
         }
 
         if (r != null)
