@@ -41,9 +41,6 @@ public class ServletDispatcher extends HttpServlet
     {
         String path = req.getPathInfo();
 
-        ServletRegistration r = null;
-
-        done:
         while (true)
         {
             for (ServletRegistration registration : registrations)
@@ -52,8 +49,29 @@ public class ServletDispatcher extends HttpServlet
                 {
                     if (registration.getContext().handleSecurity(req, resp))
                     {
-                        r = registration;
-                        break done;
+                        try
+                        {
+                            registration.getServlet().service(req, resp);
+                            return;
+                        }
+                        catch (ServletException e)
+                        {
+                            throw e;
+                        }
+                        catch (IOException e)
+                        {
+                            throw e;
+                        }
+                        catch (ResourceNotFoundException e)
+                        {
+                            if (LOGGER.isLoggable(Level.FINEST)) LOGGER.finest("Registration at " + registration.getAlias() + " has no resource");
+                        }
+                        catch (Throwable t)
+                        {
+                            LOGGER.log(Level.WARNING, "Problems calling ", t);
+                            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                            return;
+                        }
                     }
                     else
                     {
@@ -68,30 +86,7 @@ public class ServletDispatcher extends HttpServlet
             path = path.substring(0, index);
         }
 
-        if (r != null)
-        {
-            try
-            {
-                r.getServlet().service(req, resp);
-            }
-            catch (ServletException e)
-            {
-                throw e;
-            }
-            catch (IOException e)
-            {
-                throw e;
-            }
-            catch (Throwable t)
-            {
-                LOGGER.log(Level.WARNING, "Problems calling ", t);
-                resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            }
-        }
-        else
-        {
-            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
-        }
+        resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
     }
 
     void register(ServletRegistration registration)

@@ -21,7 +21,14 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URL;
+import java.net.URLConnection;
 import java.security.AccessControlContext;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.logging.Logger;
 
 import org.osgi.service.http.HttpContext;
@@ -48,8 +55,81 @@ class ServletWrapper extends HttpServlet
     }
 
     @Override
-    protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+    protected void service(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException
     {
-        super.service(req, resp);    //Todo change body of overridden methods use File | Settings | File Templates.
+
+        final URL url = httpContext.getResource(name);
+
+        if (url == null) throw new ResourceNotFoundException();
+
+        String contentType = getServletContext().getMimeType(name);
+        if (contentType != null) resp.setContentType(contentType);
+
+        try
+        {
+            AccessController.doPrivileged(new PrivilegedExceptionAction<Void>()
+            {
+                public Void run() throws Exception
+                {
+                    URLConnection conn = url.openConnection();
+
+                    long lastModified = conn.getLastModified();
+                    if (lastModified != 0) resp.setDateHeader("Last-Modified", lastModified);
+
+                    long modifiedSince = req.getDateHeader("If-Modified-Since");
+                    if (lastModified == 0 || modifiedSince == -1 || lastModified > modifiedSince)
+                    {
+                        resp.setContentLength(copyResource(conn.getInputStream(), resp.getOutputStream()));
+                        resp.setStatus(HttpServletResponse.SC_FOUND);
+                    }
+                    else
+                    {
+                        resp.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                    }
+
+                    return null;
+                }
+            }, acc);
+        }
+        catch (PrivilegedActionException pae)
+        {
+            Exception exception = pae.getException();
+            if (exception instanceof ServletException) throw (ServletException) exception;
+            if (exception instanceof IOException) throw (IOException) exception;
+
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+        catch (Exception e)
+        {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
     }
+
+    private int copyResource(InputStream in, OutputStream out) throws IOException
+    {
+        LOGGER.entering(CLASS_NAME, "copyResource", new Object[]{ in, out });
+
+        byte[] buf = new byte[4096];
+        int length = 0;
+        int n;
+
+        try
+        {
+            while ((n = in.read(buf, 0, buf.length)) != -1)
+            {
+                out.write(buf, 0, n);
+                length += n;
+            }
+
+            LOGGER.exiting(CLASS_NAME, "copyResource", length);
+
+            return length;
+        }
+        finally
+        {
+            in.close();
+            out.close();
+        }
+    }
+
 }
