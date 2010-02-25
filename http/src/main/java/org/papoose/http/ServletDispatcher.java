@@ -55,6 +55,10 @@ public class ServletDispatcher extends HttpServlet
                         r = registration;
                         break done;
                     }
+                    else
+                    {
+                        return;
+                    }
                 }
             }
 

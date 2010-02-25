@@ -84,6 +84,34 @@ public class ServletDispatcherTest
     }
 
     @Test
+    public void testFailedSecurityCheck() throws Exception
+    {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        ServletDispatcher dispatcher = new ServletDispatcher();
+        Servlet servlet = mock(Servlet.class);
+        HttpContext context = mock(HttpContext.class);
+        ServletRegistration registration = new ServletRegistration("/a/b", servlet, context);
+
+        when(context.handleSecurity(request, response)).thenAnswer(new Answer()
+        {
+            public Boolean answer(InvocationOnMock invocation)
+            {
+                HttpServletResponse resp = (HttpServletResponse) invocation.getArguments()[1];
+                resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return false;
+            }
+        });
+        when(request.getPathInfo()).thenReturn("/a/b/c");
+
+        dispatcher.register(registration);
+        dispatcher.service(request, response);
+
+        verify(context, only()).handleSecurity(request, response);
+        verify(response, only()).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    }
+
+    @Test
     public void testSimplePathRegistrant() throws Exception
     {
         HttpServletRequest request = mock(HttpServletRequest.class);
