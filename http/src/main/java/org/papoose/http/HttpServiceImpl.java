@@ -22,6 +22,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URL;
+import java.security.AccessControlContext;
+import java.security.AccessController;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Map;
@@ -118,7 +120,7 @@ public class HttpServiceImpl implements HttpService
 
         try
         {
-            registerServlet(alias, new ServletWrapper(alias, name, httpContext), EMPTY_PARAMS, httpContext);
+            registerServlet(alias, new ServletWrapper(alias, name, httpContext, AccessController.getContext()), EMPTY_PARAMS, httpContext);
         }
         catch (ServletException se)
         {

@@ -21,6 +21,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.security.AccessControlContext;
 import java.util.logging.Logger;
 
 import org.osgi.service.http.HttpContext;
@@ -29,19 +30,21 @@ import org.osgi.service.http.HttpContext;
 /**
  * @version $Revision: $ $Date: $
  */
- class ServletWrapper extends HttpServlet
+class ServletWrapper extends HttpServlet
 {
     private final static String CLASS_NAME = ServletWrapper.class.getName();
     private final static Logger LOGGER = Logger.getLogger(CLASS_NAME);
     private final String alias;
     private final String name;
     private final HttpContext httpContext;
+    private final AccessControlContext acc;
 
-     ServletWrapper(String alias, String name, HttpContext httpContext)
+    ServletWrapper(String alias, String name, HttpContext httpContext, AccessControlContext acc)
     {
         this.alias = alias;
         this.name = name;
         this.httpContext = httpContext;
+        this.acc = acc;
     }
 
     @Override
