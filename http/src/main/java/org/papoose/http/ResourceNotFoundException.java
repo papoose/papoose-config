@@ -19,6 +19,6 @@ package org.papoose.http;
 /**
  * @version $Revision: $ $Date: $
  */
-public class ResourceNotFoundException extends RuntimeException
+class ResourceNotFoundException extends RuntimeException
 {
 }

@@ -70,6 +70,15 @@ public class HttpServiceImpl implements HttpService
         }
     }
 
+    public void start() {}
+
+    public void stop()
+    {
+        dispatcher.clear();
+        contexts.clear();
+        registrations.clear();
+    }
+
     /**
      * {@inheritDoc}
      */

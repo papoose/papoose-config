@@ -31,16 +31,8 @@
     <dependencies>
 
         <dependency>
-            <groupId>org.papoose.cmpn</groupId>
-            <artifactId>papoose-cmpn-event</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.papoose.cmpn</groupId>
-            <artifactId>papoose-cmpn-log</artifactId>
-            <version>${project.version}</version>
+            <groupId>javax.servlet</groupId>
+            <artifactId>com.springsource.javax.servlet</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -76,6 +68,27 @@
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.papoose.cmpn</groupId>
+            <artifactId>papoose-cmpn-event</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.papoose.cmpn</groupId>
+            <artifactId>papoose-cmpn-http</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.papoose.cmpn</groupId>
+            <artifactId>papoose-cmpn-log</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>

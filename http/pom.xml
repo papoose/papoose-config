@@ -23,7 +23,7 @@
                     <instructions>
                         <Bundle-SymbolicName>org.papoose.cmpn.event</Bundle-SymbolicName>
                         <Export-Package>org.papoose.http</Export-Package>
-                        <Import-Package>org.papoose.core;resolution:=optional,javax.servlet;version="2.4",javax.servlet.http;version="2.4",org.osgi.framework;version="1.4",org.osgi.service.http;version="1.2"</Import-Package>
+                        <Import-Package>org.papoose.core;resolution:=optional,javax.servlet;version="[2.4,3)",javax.servlet.http;version="[2.4,3)",org.osgi.framework;version="[1,2)",org.osgi.service.http;version="[1.2,2)"</Import-Package>
                         <Private-Package>org.papoose.http.util</Private-Package>
                     </instructions>
                 </configuration>
@@ -35,8 +35,7 @@
 
         <dependency>
             <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-            <version>2.5</version>
+            <artifactId>com.springsource.javax.servlet</artifactId>
             <scope>provided</scope>
         </dependency>
 

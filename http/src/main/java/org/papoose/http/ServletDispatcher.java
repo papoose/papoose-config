@@ -98,4 +98,9 @@ public class ServletDispatcher extends HttpServlet
     {
         registrations.remove(registration);
     }
+
+    void clear()
+    {
+        registrations.clear();
+    }
 }
