@@ -22,7 +22,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URL;
-import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.util.Dictionary;
 import java.util.HashMap;
@@ -46,6 +45,7 @@ public class HttpServiceImpl implements HttpService
     private final static Logger LOGGER = Logger.getLogger(CLASS_NAME);
     private final static Properties EMPTY_PARAMS = new Properties();
     private final Object lock = new Object();
+    private final Properties mime;
     private final Map<HttpContext, ServletContextImpl> contexts = new HashMap<HttpContext, ServletContextImpl>();
     private final Map<String, ServletRegistration> registrations = new HashMap<String, ServletRegistration>();
     private final BundleContext context;
@@ -58,6 +58,16 @@ public class HttpServiceImpl implements HttpService
 
         this.context = context;
         this.dispatcher = dispatcher;
+        this.mime = new Properties();
+
+        try
+        {
+            this.mime.load(HttpServiceImpl.class.getClassLoader().getResourceAsStream("mime.properties"));
+        }
+        catch (IOException ioe)
+        {
+            LOGGER.log(Level.WARNING, "Unable to load default MIME mapping", ioe);
+        }
     }
 
     /**
@@ -120,7 +130,7 @@ public class HttpServiceImpl implements HttpService
 
         try
         {
-            registerServlet(alias, new ServletWrapper(alias, name, httpContext, AccessController.getContext()), EMPTY_PARAMS, httpContext);
+            registerServlet(alias, new ResourceServletWrapper(alias, name, httpContext, AccessController.getContext(), mime), EMPTY_PARAMS, httpContext);
         }
         catch (ServletException se)
         {
