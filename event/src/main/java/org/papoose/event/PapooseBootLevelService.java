@@ -26,7 +26,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.osgi.framework.BundleContext;
-
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.event.EventAdmin;
 import org.papoose.core.Papoose;
 import org.papoose.event.util.Util;
 
@@ -45,6 +46,7 @@ public class PapooseBootLevelService
     public final static String LOG_SERVICE_SCHEDULE_CORE_POOL_SIZE = CLASS_NAME + ".scheduleCorePoolSize";
     private final static Logger LOGGER = Logger.getLogger(CLASS_NAME);
     private volatile EventAdminImpl eventAdminService;
+    private volatile ServiceRegistration registration;
 
     public void start(Papoose papoose)
     {
@@ -97,6 +99,8 @@ public class PapooseBootLevelService
 
         eventAdminService.start();
 
+        registration = bundleContext.registerService(EventAdmin.class.getName(), eventAdminService, null);
+
         LOGGER.exiting(CLASS_NAME, "start");
     }
 
@@ -109,6 +113,9 @@ public class PapooseBootLevelService
             LOGGER.log(Level.WARNING, "Event Admin service already stopped");
             return;
         }
+
+        registration.unregister();
+        registration = null;
 
         eventAdminService.stop();
         eventAdminService = null;
