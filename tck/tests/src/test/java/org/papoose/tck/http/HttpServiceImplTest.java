@@ -16,16 +16,21 @@
  */
 package org.papoose.tck.http;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.net.URL;
+import java.util.Properties;
 
 import org.junit.Assert;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import static org.ops4j.pax.exam.CoreOptions.equinox;
+import static org.ops4j.pax.exam.CoreOptions.felix;
+import static org.ops4j.pax.exam.CoreOptions.knopflerfish;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.options;
 import static org.ops4j.pax.exam.CoreOptions.provision;
@@ -37,10 +42,13 @@ import org.ops4j.pax.exam.junit.Configuration;
 import org.ops4j.pax.exam.junit.JUnit4TestRunner;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
+import org.osgi.service.http.HttpContext;
 import org.osgi.service.http.HttpService;
 import org.osgi.service.http.NamespaceException;
 
+import org.papoose.http.HttpServer;
 import org.papoose.http.HttpServiceImpl;
+import org.papoose.http.JettyHttpServer;
 import org.papoose.http.ServletDispatcher;
 
 
@@ -58,8 +66,8 @@ public class HttpServiceImplTest
     {
         return options(
                 equinox(),
-                // felix(),
-                // knopflerfish(),
+                felix(),
+                knopflerfish(),
                 // papoose(),
                 compendiumProfile(),
                 // vmOption("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
@@ -70,16 +78,16 @@ public class HttpServiceImplTest
                 // waitForFrameworkStartup()
                 provision(
                         mavenBundle().groupId("javax.servlet").artifactId("com.springsource.javax.servlet").version(asInProject()),
+                        mavenBundle().groupId("org.mortbay.jetty").artifactId("jetty").version(asInProject()),
+                        mavenBundle().groupId("org.mortbay.jetty").artifactId("jetty-util").version(asInProject()),
                         mavenBundle().groupId("org.papoose.cmpn").artifactId("papoose-cmpn-http").version(asInProject())
                 )
         );
     }
 
-    @Test
-    public void test() throws Exception
+    public void testRegistrations() throws Exception
     {
         Assert.assertNotNull(bundleContext);
-        ExecutorService executor = new ThreadPoolExecutor(1, 5, 100, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
 
         ServletDispatcher dispatcher = new ServletDispatcher();
         HttpServiceImpl httpService = new HttpServiceImpl(bundleContext, dispatcher);
@@ -107,7 +115,127 @@ public class HttpServiceImplTest
         finally
         {
             httpService.stop();
-            executor.shutdown();
+        }
+    }
+
+    public void testResourceAbsolute() throws Exception
+    {
+        Assert.assertNotNull(bundleContext);
+
+        Properties properties = new Properties();
+
+        properties.setProperty(HttpServer.HTTP_PORT, "8080");
+
+        HttpServer server = JettyHttpServer.generate(properties);
+
+        server.start();
+
+        HttpServiceImpl httpService = new HttpServiceImpl(bundleContext, server.getServletDispatcher());
+
+        httpService.start();
+        bundleContext.registerService(HttpService.class.getName(), httpService, null);
+
+        try
+        {
+            ServiceReference sr = bundleContext.getServiceReference(HttpService.class.getName());
+            HttpService service = (HttpService) bundleContext.getService(sr);
+
+            service.registerResources("/a/b", "/org/papoose/tck", new HttpContext()
+            {
+                public boolean handleSecurity(HttpServletRequest request, HttpServletResponse response) throws IOException
+                {
+                    return true;
+                }
+
+                public URL getResource(String name)
+                {
+                    return HttpServiceImplTest.class.getResource(name);
+                }
+
+                public String getMimeType(String name)
+                {
+                    return null;
+                }
+            });
+
+            URL url = new URL("http://localhost:8080/a/b/http/HttpServiceImplTest.class");
+
+            DataInputStream reader = new DataInputStream(url.openStream());
+
+            assertEquals((byte) 0xca, reader.readByte());
+            assertEquals((byte) 0xfe, reader.readByte());
+
+            assertEquals((byte) 0xba, reader.readByte());
+            assertEquals((byte) 0xbe, reader.readByte());
+
+            service.unregister("/a/b");
+        }
+        finally
+        {
+            httpService.stop();
+            server.stop();
+        }
+    }
+
+    @Test
+    public void testResourceRelative() throws Exception
+    {
+        Assert.assertNotNull(bundleContext);
+
+        Properties properties = new Properties();
+
+        properties.setProperty(HttpServer.HTTP_PORT, "8080");
+
+        HttpServer server = JettyHttpServer.generate(properties);
+
+        server.start();
+
+        HttpServiceImpl httpService = new HttpServiceImpl(bundleContext, server.getServletDispatcher());
+
+        httpService.start();
+        bundleContext.registerService(HttpService.class.getName(), httpService, null);
+
+        try
+        {
+            ServiceReference sr = bundleContext.getServiceReference(HttpService.class.getName());
+            HttpService service = (HttpService) bundleContext.getService(sr);
+
+            service.registerResources("/a/b", ".", new HttpContext()
+            {
+                public boolean handleSecurity(HttpServletRequest request, HttpServletResponse response) throws IOException
+                {
+                    return true;
+                }
+
+                public URL getResource(String name)
+                {
+                    name = name.replaceAll("^\\./", "");
+                    name = name.replaceAll("/\\./", "/");
+                    return HttpServiceImplTest.class.getResource(name);
+                }
+
+                public String getMimeType(String name)
+                {
+                    return null;
+                }
+            });
+
+            URL url = new URL("http://localhost:8080/a/b/HttpServiceImplTest.class");
+
+            DataInputStream reader = new DataInputStream(url.openStream());
+
+            assertEquals((byte) 0xca, reader.readByte());
+            assertEquals((byte) 0xfe, reader.readByte());
+
+            assertEquals((byte) 0xba, reader.readByte());
+            assertEquals((byte) 0xbe, reader.readByte());
+
+            service.unregister("/a/b");
+        }
+        finally
+        {
+            httpService.stop();
+            server.stop();
         }
     }
 }

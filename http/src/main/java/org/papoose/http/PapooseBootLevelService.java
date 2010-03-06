@@ -16,7 +16,11 @@
  */
 package org.papoose.http;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.service.http.HttpService;
 
 import org.papoose.core.Papoose;
 
@@ -28,16 +32,51 @@ public class PapooseBootLevelService
 {
     private final static String CLASS_NAME = PapooseBootLevelService.class.getName();
     private final static Logger LOGGER = Logger.getLogger(CLASS_NAME);
+    private volatile HttpServer server;
+    private volatile HttpServiceImpl httpService;
 
     public void start(Papoose papoose)
     {
         LOGGER.entering(CLASS_NAME, "start", papoose);
+
+        if (papoose == null) throw new IllegalArgumentException("Papoose instance is null");
+
+        if (server != null)
+        {
+            LOGGER.log(Level.WARNING, "Http service already started");
+            return;
+        }
+
+        LOGGER.finest("Provisioning Jetty server");
+        server = JettyHttpServer.generate(papoose.getProperties());
+
+        server.start();
+
+        BundleContext bundleContext = papoose.getSystemBundleContext();
+
+        httpService = new HttpServiceImpl(bundleContext, server.getServletDispatcher());
+
+        httpService.start();
+        bundleContext.registerService(HttpService.class.getName(), httpService, null);
+
         LOGGER.exiting(CLASS_NAME, "start");
     }
 
     public void stop()
     {
         LOGGER.entering(CLASS_NAME, "stop");
+
+        if (server == null)
+        {
+            LOGGER.log(Level.WARNING, "Http service already stopped");
+            return;
+        }
+
+        httpService.stop();
+        httpService = null;
+        server.stop();
+        server = null;
+
         LOGGER.exiting(CLASS_NAME, "stop");
     }
 }

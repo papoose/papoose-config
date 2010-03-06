@@ -25,6 +25,7 @@
     </modules>
 
     <properties>
+        <jettyVersion>6.1.19</jettyVersion>
         <paxExamVersion>1.2.0</paxExamVersion>
         <papooseTestVersion>1.0-SNAPSHOT</papooseTestVersion>
     </properties>
@@ -77,7 +78,7 @@
             <dependency>
                 <groupId>javax.servlet</groupId>
                 <artifactId>com.springsource.javax.servlet</artifactId>
-                <version>2.4.0</version>
+                <version>2.5.0</version>
             </dependency>
 
             <dependency>

@@ -69,7 +69,7 @@ public class ServletDispatcher extends HttpServlet
                         catch (Throwable t)
                         {
                             LOGGER.log(Level.WARNING, "Problems calling ", t);
-                            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                             return;
                         }
                     }
@@ -86,7 +86,7 @@ public class ServletDispatcher extends HttpServlet
             path = path.substring(0, index);
         }
 
-        resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        resp.sendError(HttpServletResponse.SC_NOT_FOUND);
     }
 
     void register(ServletRegistration registration)

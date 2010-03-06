@@ -104,7 +104,7 @@ class ResourceServletWrapper extends HttpServlet
             if (exception instanceof ServletException) throw (ServletException) exception;
             if (exception instanceof IOException) throw (IOException) exception;
 
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
         catch (IOException ioe)
         {
@@ -112,7 +112,8 @@ class ResourceServletWrapper extends HttpServlet
         }
         catch (Exception e)
         {
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            System.err.println(e);
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
 
         LOGGER.exiting(CLASS_NAME, "service");
@@ -131,7 +132,7 @@ class ResourceServletWrapper extends HttpServlet
         if (lastModified == 0 || modifiedSince == -1 || lastModified > modifiedSince)
         {
             resp.setContentLength(copyResource(conn.getInputStream(), resp.getOutputStream()));
-            resp.setStatus(HttpServletResponse.SC_FOUND);
+            resp.setStatus(HttpServletResponse.SC_OK);
         }
         else
         {

@@ -51,7 +51,7 @@ public class ServletDispatcherTest
 
         dispatcher.service(request, response);
 
-        verify(response, only()).setStatus(HttpServletResponse.SC_NOT_FOUND);
+        verify(response, only()).sendError(HttpServletResponse.SC_NOT_FOUND);
     }
 
     @Test
@@ -158,7 +158,7 @@ public class ServletDispatcherTest
         dispatcher.service(request, response);
 
         verify(context, only()).handleSecurity(request, response);
-        verify(response, only()).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        verify(response, only()).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
 
     @Test
@@ -186,7 +186,7 @@ public class ServletDispatcherTest
         }
 
         verify(context, only()).handleSecurity(request, response);
-        verify(response, never()).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        verify(response, never()).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
 
     @Test
@@ -215,7 +215,7 @@ public class ServletDispatcherTest
         dispatcher.service(request, response);
 
         verify(context, never()).handleSecurity(request, response);
-        verify(response, only()).setStatus(HttpServletResponse.SC_NOT_FOUND);
+        verify(response, only()).sendError(HttpServletResponse.SC_NOT_FOUND);
     }
 
     @Test
@@ -244,6 +244,6 @@ public class ServletDispatcherTest
         dispatcher.service(request, response);
 
         verify(context, never()).handleSecurity(request, response);
-        verify(response, only()).setStatus(HttpServletResponse.SC_NOT_FOUND);
+        verify(response, only()).sendError(HttpServletResponse.SC_NOT_FOUND);
     }
 }
