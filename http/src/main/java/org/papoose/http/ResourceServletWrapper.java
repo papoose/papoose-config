@@ -112,7 +112,6 @@ class ResourceServletWrapper extends HttpServlet
         }
         catch (Exception e)
         {
-            System.err.println(e);
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
 

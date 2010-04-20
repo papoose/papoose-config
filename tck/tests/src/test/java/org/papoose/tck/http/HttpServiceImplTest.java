@@ -71,9 +71,9 @@ public class HttpServiceImplTest
                 // papoose(),
                 compendiumProfile(),
                 // vmOption("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
-                // this is necessary to let junit runner not timout the remote process before attaching debugger
+                // this is necessary to let junit runner not timeout the remote process before attaching debugger
                 // setting timeout to 0 means wait as long as the remote service comes available.
-                // starting with version 0.5.0 of PAx Exam this is no longer required as by default the framework tests
+                // starting with version 0.5.0 of PAX Exam this is no longer required as by default the framework tests
                 // will not be triggered till the framework is not started
                 // waitForFrameworkStartup()
                 provision(
@@ -85,6 +85,7 @@ public class HttpServiceImplTest
         );
     }
 
+    @Test
     public void testRegistrations() throws Exception
     {
         Assert.assertNotNull(bundleContext);
@@ -118,6 +119,7 @@ public class HttpServiceImplTest
         }
     }
 
+    @Test
     public void testResourceAbsolute() throws Exception
     {
         Assert.assertNotNull(bundleContext);
