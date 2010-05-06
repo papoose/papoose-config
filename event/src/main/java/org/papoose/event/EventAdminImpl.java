@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -66,6 +67,7 @@ public class EventAdminImpl implements EventAdmin
         public boolean matchCase(Dictionary dictionary) { return true; }
     };
     private final Listeners listeners = new Listeners();
+    private final Semaphore semaphore = new Semaphore(1);
     private final BundleContext context;
     private final ServiceTracker tracker;
     private final ExecutorService executor;
@@ -144,11 +146,27 @@ public class EventAdminImpl implements EventAdmin
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) sm.checkPermission(new TopicPermission(event.getTopic(), TopicPermission.PUBLISH));
 
-        Set<EventListener> set = collectListeners(event);
-
-        for (final EventListener el : set)
+        try
         {
-            el.executor.execute(new TimeoutRunnable(el, event));
+            semaphore.acquire();
+
+            Set<EventListener> set = collectListeners(event);
+            try
+            {
+                for (final EventListener el : set)
+                {
+                    el.executor.execute(new TimeoutRunnable(el, event));
+                }
+            }
+            finally
+            {
+                semaphore.release();
+            }
+        }
+        catch (InterruptedException ie)
+        {
+            LOGGER.log(Level.WARNING, "Wait interrupted", ie);
+            Thread.currentThread().interrupt();
         }
 
         LOGGER.exiting(CLASS_NAME, "postEvent");
@@ -161,25 +179,36 @@ public class EventAdminImpl implements EventAdmin
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) sm.checkPermission(new TopicPermission(event.getTopic(), TopicPermission.PUBLISH));
 
-        Set<EventListener> set = collectListeners(event);
-
-        if (!set.isEmpty())
+        try
         {
+            semaphore.acquire();
+
+            Set<EventListener> set = collectListeners(event);
             final CountDownLatch latch = new CountDownLatch(set.size());
-            for (final EventListener listener : set)
+            try
             {
-                listener.executor.execute(new TimeoutRunnable(latch, listener, event));
+                if (!set.isEmpty())
+                {
+                    for (final EventListener listener : set)
+                    {
+                        listener.executor.execute(new TimeoutRunnable(latch, listener, event));
+                    }
+                }
+            }
+            finally
+            {
+                semaphore.release();
             }
 
-            try
+            if (!set.isEmpty())
             {
                 latch.await();
             }
-            catch (InterruptedException ie)
-            {
-                LOGGER.log(Level.WARNING, "Wait interrupted", ie);
-                Thread.currentThread().interrupt();
-            }
+        }
+        catch (InterruptedException ie)
+        {
+            LOGGER.log(Level.WARNING, "Wait interrupted", ie);
+            Thread.currentThread().interrupt();
         }
 
         LOGGER.exiting(CLASS_NAME, "sendEvent");
