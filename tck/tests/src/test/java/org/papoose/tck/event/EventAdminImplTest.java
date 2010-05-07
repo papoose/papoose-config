@@ -72,8 +72,8 @@ public class EventAdminImplTest
                 knopflerfish(),
                 // papoose(),
                 compendiumProfile(),
-                vmOption("-Xmx2G"),
-                //vmOption("-Xmx2G -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
+                vmOption("-Xmx1024M"),
+                //vmOption("-Xmx1024M -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
                 // this is necessary to let junit runner not timout the remote process before attaching debugger
                 // setting timeout to 0 means wait as long as the remote service comes available.
                 // starting with version 0.5.0 of PAx Exam this is no longer required as by default the framework tests
@@ -284,7 +284,7 @@ public class EventAdminImplTest
         Dictionary<String, Object> properties = new Hashtable<String, Object>();
         properties.put(EventConstants.EVENT_TOPIC, "a/*");
 
-        final int MAX_LISTENERS = 1024;
+        final int MAX_LISTENERS = 128;
         final int MAX_MESSAGES = 1024;
         final CountDownLatch latch = new CountDownLatch(4 * MAX_LISTENERS * MAX_MESSAGES);
         ServiceRegistration[] registrations = new ServiceRegistration[MAX_LISTENERS];
