@@ -16,15 +16,16 @@
  */
 package org.papoose.tck.event;
 
+import java.util.ArrayList;
 import java.util.Dictionary;
+import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static junit.framework.Assert.assertEquals;
@@ -41,6 +42,7 @@ import org.ops4j.pax.exam.Inject;
 import static org.ops4j.pax.exam.MavenUtils.asInProject;
 import org.ops4j.pax.exam.Option;
 import static org.ops4j.pax.exam.container.def.PaxRunnerOptions.compendiumProfile;
+import static org.ops4j.pax.exam.container.def.PaxRunnerOptions.vmOption;
 import org.ops4j.pax.exam.junit.Configuration;
 import org.ops4j.pax.exam.junit.JUnit4TestRunner;
 import org.osgi.framework.BundleContext;
@@ -70,7 +72,8 @@ public class EventAdminImplTest
                 knopflerfish(),
                 // papoose(),
                 compendiumProfile(),
-                // vmOption("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
+                vmOption("-Xmx2G"),
+                //vmOption("-Xmx2G -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
                 // this is necessary to let junit runner not timout the remote process before attaching debugger
                 // setting timeout to 0 means wait as long as the remote service comes available.
                 // starting with version 0.5.0 of PAx Exam this is no longer required as by default the framework tests
@@ -86,8 +89,8 @@ public class EventAdminImplTest
     public void testSingleEvent() throws Exception
     {
         Assert.assertNotNull(bundleContext);
-        ExecutorService executor = new ThreadPoolExecutor(1, 5, 100, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
-        ScheduledExecutorService scheduledExecutor = new ScheduledThreadPoolExecutor(2);
+        ExecutorService executor = Executors.newFixedThreadPool(5);
+        ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2);
 
         EventAdminImpl eventAdmin = new EventAdminImpl(bundleContext, executor, scheduledExecutor);
 
@@ -148,8 +151,8 @@ public class EventAdminImplTest
     public void testWildcard() throws Exception
     {
         Assert.assertNotNull(bundleContext);
-        ExecutorService executor = new ThreadPoolExecutor(1, 5, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
-        ScheduledExecutorService scheduledExecutor = new ScheduledThreadPoolExecutor(2);
+        ExecutorService executor = Executors.newFixedThreadPool(5);
+        ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2);
 
         EventAdminImpl eventAdmin = new EventAdminImpl(bundleContext, executor, scheduledExecutor);
 
@@ -209,8 +212,8 @@ public class EventAdminImplTest
     public void testRootWildcard() throws Exception
     {
         Assert.assertNotNull(bundleContext);
-        ExecutorService executor = new ThreadPoolExecutor(1, 5, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
-        ScheduledExecutorService scheduledExecutor = new ScheduledThreadPoolExecutor(2);
+        ExecutorService executor = Executors.newFixedThreadPool(5);
+        ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2);
 
         EventAdminImpl eventAdmin = new EventAdminImpl(bundleContext, executor, scheduledExecutor);
 
@@ -265,4 +268,101 @@ public class EventAdminImplTest
             scheduledExecutor.shutdown();
         }
     }
+
+    @Test
+    public void testHammerEvent() throws Exception
+    {
+        Assert.assertNotNull(bundleContext);
+        ExecutorService executor = Executors.newFixedThreadPool(5);
+        ExecutorService hammer = Executors.newFixedThreadPool(16);
+        ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2);
+
+        final EventAdminImpl eventAdmin = new EventAdminImpl(bundleContext, executor, scheduledExecutor);
+
+        eventAdmin.start();
+
+        Dictionary<String, Object> properties = new Hashtable<String, Object>();
+        properties.put(EventConstants.EVENT_TOPIC, "a/*");
+
+        final int MAX_LISTENERS = 1024;
+        final int MAX_MESSAGES = 1024;
+        final CountDownLatch latch = new CountDownLatch(4 * MAX_LISTENERS * MAX_MESSAGES);
+        ServiceRegistration[] registrations = new ServiceRegistration[MAX_LISTENERS];
+        final List<Event>[] events = new List[MAX_LISTENERS];
+        final Set<Thread> rthreads = new HashSet<Thread>();
+        final Set<Thread>[] rthread = new Set[MAX_LISTENERS];
+        final Set<Thread> sthreads = new HashSet<Thread>();
+
+        for (int i = 0; i < MAX_LISTENERS; i++)
+        {
+            final int myIndex = i;
+            events[i] = new ArrayList<Event>();
+            rthread[i] = new HashSet<Thread>();
+            registrations[i] = bundleContext.registerService(EventHandler.class.getName(), new EventHandler()
+            {
+                public void handleEvent(Event event)
+                {
+                    try
+                    {
+                        events[myIndex].add(event);
+                        rthreads.add(Thread.currentThread());
+                        rthread[myIndex].add(Thread.currentThread());
+                    }
+                    finally
+                    {
+                        latch.countDown();
+                    }
+                }
+            }, properties);
+        }
+
+        try
+        {
+
+            for (int i = 0; i < MAX_MESSAGES; i++)
+            {
+                final int msgID = i;
+                hammer.execute(new Runnable()
+                {
+                    public void run()
+                    {
+                        eventAdmin.postEvent(new Event("a/b/" + msgID, (Dictionary) null));
+
+                        eventAdmin.sendEvent(new Event("a/b/c/" + msgID, (Dictionary) null));
+                        eventAdmin.postEvent(new Event("a/b/c/d/" + msgID, (Dictionary) null));
+                        eventAdmin.sendEvent(new Event("z/b/c/d/" + msgID, (Dictionary) null));
+                        eventAdmin.postEvent(new Event("a/b/c/d/e/" + msgID, (Dictionary) null));
+
+                        sthreads.add(Thread.currentThread());
+                    }
+                });
+            }
+
+            latch.await();
+
+            for (int i = 0; i < MAX_MESSAGES; i++)
+            {
+                Event event = events[0].get(i);
+
+                for (int j = 0; j < MAX_LISTENERS; j++)
+                {
+                    assertEquals("Events should match and be in the same order", event, events[j].get(i));
+                }
+            }
+
+            System.out.println("rThread: " + rthreads.size());
+            System.out.println("sThread: " + sthreads.size());
+        }
+        finally
+        {
+            for (int i = 0; i < MAX_LISTENERS; i++) registrations[i].unregister();
+
+            eventAdmin.stop();
+
+            hammer.shutdown();
+            executor.shutdown();
+            scheduledExecutor.shutdown();
+        }
+    }
+
 }
