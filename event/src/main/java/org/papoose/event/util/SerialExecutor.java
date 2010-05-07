@@ -40,7 +40,7 @@ public class SerialExecutor implements Executor
     private Runnable active;
 
     /**
-     * Initialzed the serial executor with a shared executor delegate.
+     * Initialized the serial executor with a shared executor delegate.
      *
      * @param executor the shared executor that is fed by this queue
      */

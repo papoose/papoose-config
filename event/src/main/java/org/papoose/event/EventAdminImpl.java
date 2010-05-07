@@ -153,9 +153,9 @@ public class EventAdminImpl implements EventAdmin
             Set<EventListener> set = collectListeners(event);
             try
             {
-                for (final EventListener el : set)
+                for (final EventListener listener : set)
                 {
-                    el.executor.execute(new TimeoutRunnable(el, event));
+                    listener.executor.execute(new TimeoutRunnable(listener, event));
                 }
             }
             finally
@@ -462,7 +462,7 @@ public class EventAdminImpl implements EventAdmin
                     public void run()
                     {
                         loggers.log(listener.reference, LogService.LOG_WARNING, "Listener timeout, will be blacklisted");
-                        LOGGER.log(Level.WARNING, "Listener timeout, will be blacklisted");
+                        LOGGER.warning("Listener timeout, will be blacklisted");
 
                         remove(listener);
                     }
