@@ -349,9 +349,6 @@ public class EventAdminImplTest
                     assertEquals("Events should match and be in the same order", event, events[j].get(i));
                 }
             }
-
-            System.out.println("rThread: " + rthreads.size());
-            System.out.println("sThread: " + sthreads.size());
         }
         finally
         {
