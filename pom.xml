@@ -16,12 +16,6 @@
 
     <modules>
         <module>config</module>
-        <module>event</module>
-        <module>http</module>
-        <module>log</module>
-        <module>metatype</module>
-        <module>monitor</module>
-        <module>provision</module>
     </modules>
 
     <properties>
