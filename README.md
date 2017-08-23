@@ -2,6 +2,8 @@ Papoose OSGi Configuration Admin Service
 =====
 <em>An OSGi Configuration Admin Service implementation.</em>
 
+[![Build Status](https://travis-ci.org/papoose/papoose-config.svg?branch=master)](https://travis-ci.org/papoose/papoose-config)
+
 The Configuration Admin service is an important aspect of the deployment
 of an OSGi Service Platform. It allows an Operator to set the configuration
 information of deployed bundles.
